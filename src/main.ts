@@ -280,7 +280,8 @@ function bindEvents(): void {
 }
 
 function initDatepickers(): void {
-  const locale = state.language === "tr" ? tr : state.language === "tl" ? tagalog : en;
+  const importedLocale = state.language === "tr" ? tr : en;
+  const locale = state.language === "tl" ? tagalog : (importedLocale as AirDatepickerLocale & { default?: AirDatepickerLocale }).default ?? importedLocale;
   document.querySelectorAll<HTMLInputElement>("[data-datepicker]").forEach((input) => {
     const datepicker = new AirDatepicker(input, {
       locale, dateFormat: "dd.MM.yyyy", autoClose: true, keyboardNav: true,

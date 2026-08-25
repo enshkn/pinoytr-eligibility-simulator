@@ -13,6 +13,7 @@ test("a mobile user completes the long-term residence flow and receives iframe r
   await expect(page.getByLabel("Assessment date")).toHaveAttribute("type", "text");
   await page.getByLabel("Assessment date").click();
   await expect(page.locator(".air-datepicker")).toBeVisible();
+  await expect(page.locator(".air-datepicker-nav--title")).toContainText("August");
   await page.locator(".air-datepicker-cell.-day-:not(.-disabled-):not(.-other-month-)").last().click();
   await page.getByLabel("Assessment date").fill("01.01.2026");
   await page.getByLabel("Assessment date").press("Tab");
