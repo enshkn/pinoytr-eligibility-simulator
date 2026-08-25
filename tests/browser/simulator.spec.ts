@@ -84,3 +84,17 @@ test("calendar follows all three interface languages", async ({ page }) => {
   await page.getByLabel("Petsa ng pagsusuri").click();
   await expect(page.locator(".air-datepicker-nav--title")).toContainText("Enero");
 });
+
+test("manual theme selection overrides the system theme without losing the current flow", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /Long-term residence/ }).click();
+
+  await page.getByLabel("Appearance").selectOption("light");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.getByLabel("Appearance").selectOption("dark");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.getByRole("heading", { name: "Long-term residence" })).toBeVisible();
+
+  await page.getByLabel("Appearance").selectOption("system");
+  await expect(page.locator("html")).not.toHaveAttribute("data-theme");
+});

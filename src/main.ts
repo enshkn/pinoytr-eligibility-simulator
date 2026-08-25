@@ -37,6 +37,7 @@ const sources = [
 ] as const;
 
 const today = new Date().toISOString().slice(0, 10);
+type Theme = "system" | "light" | "dark";
 const tagalog: AirDatepickerLocale = {
   days: ["Linggo", "Lunes", "Martes", "Miyerkules", "Huwebes", "Biyernes", "Sabado"],
   daysShort: ["Lin", "Lun", "Mar", "Miy", "Huw", "Biy", "Sab"],
@@ -48,6 +49,7 @@ const tagalog: AirDatepickerLocale = {
 let datepickers: AirDatepicker[] = [];
 const state: {
   language: Language;
+  theme: Theme;
   mode: SimulatorMode | null;
   assessmentDate: string;
   permits: PermitPeriod[];
@@ -56,6 +58,7 @@ const state: {
   error: "empty" | "date" | null;
 } = {
   language: "en",
+  theme: "system",
   mode: null,
   assessmentDate: today,
   permits: [],
@@ -184,7 +187,8 @@ function resultMarkup(result: AssessmentResult): string {
 }
 
 function headerMarkup(): string {
-  return `<header class="app-header"><img src="./logo.png" alt="" width="48" height="48"><label class="language"><span>${t(state.language, "language")}</span><select id="language">${option("tr", "Türkçe", state.language === "tr")}${option("en", "English", state.language === "en")}${option("tl", "Tagalog", state.language === "tl")}</select></label></header>`;
+  const c = state.language;
+  return `<header class="app-header"><img src="./logo.png" alt="" width="48" height="48"><div class="header-tools"><label class="header-control"><span>${t(c, "theme")}</span><select id="theme">${option("system", t(c, "systemTheme"), state.theme === "system")}${option("light", t(c, "lightTheme"), state.theme === "light")}${option("dark", t(c, "darkTheme"), state.theme === "dark")}</select></label><label class="header-control"><span>${t(c, "language")}</span><select id="language">${option("tr", "Türkçe", state.language === "tr")}${option("en", "English", state.language === "en")}${option("tl", "Tagalog", state.language === "tl")}</select></label></div></header>`;
 }
 
 function introMarkup(): string {
@@ -202,6 +206,8 @@ function render(): void {
   datepickers.forEach((datepicker) => { if (!datepicker.isDestroyed) datepicker.destroy(); });
   datepickers = [];
   document.documentElement.lang = t(state.language, "documentLanguage");
+  if (state.theme === "system") delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = state.theme;
   app.innerHTML = `<div class="shell">${headerMarkup()}${state.mode ? formMarkup() : introMarkup()}</div>`;
   bindEvents();
   initDatepickers();
@@ -243,6 +249,10 @@ function validPermits(): boolean {
 }
 
 function bindEvents(): void {
+  document.querySelector<HTMLSelectElement>("#theme")?.addEventListener("change", (event) => {
+    state.theme = (event.currentTarget as HTMLSelectElement).value as Theme;
+    render();
+  });
   document.querySelector<HTMLSelectElement>("#language")?.addEventListener("change", (event) => {
     state.language = (event.currentTarget as HTMLSelectElement).value as Language;
     render();

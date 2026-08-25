@@ -6,6 +6,10 @@ const copy = {
   tr: {
     documentLanguage: "tr",
     language: "Dil",
+    theme: "Görünüm",
+    systemTheme: "Sistem",
+    lightTheme: "Açık",
+    darkTheme: "Koyu",
     introTitle: "Hangi yolu değerlendirmek istiyorsunuz?",
     introBody: "İzin geçmişinizi bir kez girerek süre şartları için açıklanabilir bir ön değerlendirme alın.",
     longTerm: "Uzun dönem ikamet",
@@ -66,6 +70,10 @@ const copy = {
   en: {
     documentLanguage: "en",
     language: "Language",
+    theme: "Appearance",
+    systemTheme: "System",
+    lightTheme: "Light",
+    darkTheme: "Dark",
     introTitle: "Which path do you want to assess?",
     introBody: "Enter your permit history once and receive an explainable pre-assessment of the duration requirements.",
     longTerm: "Long-term residence",
@@ -126,6 +134,10 @@ const copy = {
   tl: {
     documentLanguage: "tl",
     language: "Wika",
+    theme: "Tema",
+    systemTheme: "System",
+    lightTheme: "Maliwanag",
+    darkTheme: "Madilim",
     introTitle: "Aling landas ang nais mong suriin?",
     introBody: "Ilagay nang isang beses ang iyong permit history upang makakuha ng malinaw na paunang pagsusuri sa haba ng paninirahan.",
     longTerm: "Pangmatagalang residence permit",

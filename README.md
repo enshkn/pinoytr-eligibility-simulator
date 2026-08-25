@@ -32,13 +32,15 @@ Do not configure analytics that captures form values, permit dates, checklist an
 Add this to a Ghost page HTML card:
 
 ```html
-<iframe
-  id="eligibility-simulator"
-  src="https://simulator.example.com/"
-  title="Residence and citizenship eligibility simulator"
-  width="100%"
-  style="border:0;min-height:720px"
-></iframe>
+<div style="overflow:hidden;border-radius:28px;box-shadow:0 24px 70px rgba(17,30,50,.14)">
+  <iframe
+    id="eligibility-simulator"
+    src="https://simulator.example.com/"
+    title="Residence and citizenship eligibility simulator"
+    width="100%"
+    style="display:block;border:0;min-height:720px"
+  ></iframe>
+</div>
 
 <script>
   window.addEventListener("message", function (event) {
