@@ -10,11 +10,16 @@ test("a mobile user completes the long-term residence flow and receives iframe r
   await expect(page.getByRole("heading", { name: "Which path do you want to assess?" })).toBeVisible();
 
   await page.getByRole("button", { name: /Long-term residence/ }).click();
-  await page.getByLabel("Assessment date").fill("2026-01-01");
+  await expect(page.getByLabel("Assessment date")).toHaveAttribute("type", "text");
+  await page.getByLabel("Assessment date").click();
+  await expect(page.locator(".air-datepicker")).toBeVisible();
+  await page.locator(".air-datepicker-cell.-day-:not(.-disabled-):not(.-other-month-)").last().click();
+  await page.getByLabel("Assessment date").fill("01.01.2026");
+  await page.getByLabel("Assessment date").press("Tab");
   await page.getByRole("button", { name: "Add permit period" }).click();
   await page.getByLabel("Permit type").selectOption("family");
-  await page.getByLabel("Start date").fill("2018-01-01");
-  await page.getByLabel("End date").fill("2025-12-31");
+  await page.getByLabel("Start date").fill("01.01.2018");
+  await page.getByLabel("End date").fill("31.12.2025");
 
   for (const select of await page.locator("[data-condition]").all()) await select.selectOption("yes");
   await page.getByRole("button", { name: "Calculate pre-assessment" }).click();

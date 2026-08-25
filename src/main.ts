@@ -1,4 +1,8 @@
 import "./styles.css";
+import AirDatepicker, { type AirDatepickerLocale } from "air-datepicker";
+import "air-datepicker/air-datepicker.css";
+import en from "air-datepicker/locale/en";
+import tr from "air-datepicker/locale/tr";
 import {
   assessApplication,
   type Answer,
@@ -33,6 +37,15 @@ const sources = [
 ] as const;
 
 const today = new Date().toISOString().slice(0, 10);
+const tagalog: AirDatepickerLocale = {
+  days: ["Linggo", "Lunes", "Martes", "Miyerkules", "Huwebes", "Biyernes", "Sabado"],
+  daysShort: ["Lin", "Lun", "Mar", "Miy", "Huw", "Biy", "Sab"],
+  daysMin: ["Li", "Lu", "Ma", "Mi", "Hu", "Bi", "Sa"],
+  months: ["Enero", "Pebrero", "Marso", "Abril", "Mayo", "Hunyo", "Hulyo", "Agosto", "Setyembre", "Oktubre", "Nobyembre", "Disyembre"],
+  monthsShort: ["Ene", "Peb", "Mar", "Abr", "May", "Hun", "Hul", "Ago", "Set", "Okt", "Nob", "Dis"],
+  today: "Ngayon", clear: "I-clear", dateFormat: "dd.MM.yyyy", timeFormat: "HH:mm", firstDay: 1,
+};
+let datepickers: AirDatepicker[] = [];
 const state: {
   language: Language;
   mode: SimulatorMode | null;
@@ -63,6 +76,24 @@ function option(value: string, label: string, selected: boolean): string {
   return `<option value="${escapeAttribute(value)}"${selected ? " selected" : ""}>${label}</option>`;
 }
 
+function parseDate(value: string): string | null {
+  const match = /^(?:(\d{2})\.(\d{2})\.(\d{4})|(\d{4})-(\d{2})-(\d{2}))$/.exec(value.trim());
+  if (!match) return null;
+  const [, day, month, year, isoYear, isoMonth, isoDay] = match;
+  const iso = `${isoYear ?? year}-${isoMonth ?? month}-${isoDay ?? day}`;
+  const date = new Date(`${iso}T00:00:00Z`);
+  return Number.isNaN(date.valueOf()) || date.toISOString().slice(0, 10) !== iso ? null : iso;
+}
+
+function displayDate(iso: string): string {
+  const [year, month, day] = iso.split("-");
+  return year && month && day ? `${day}.${month}.${year}` : "";
+}
+
+function dateInput(value: string, field = ""): string {
+  return `<input ${field} data-datepicker type="text" inputmode="numeric" autocomplete="off" placeholder="DD.MM.YYYY" value="${displayDate(value)}" required>`;
+}
+
 function permitMarkup(permit: PermitPeriod, index: number): string {
   const c = state.language;
   const typeOptions = permitTypes.map((type) => option(type, permitLabels[c][type], permit.type === type)).join("");
@@ -76,8 +107,8 @@ function permitMarkup(permit: PermitPeriod, index: number): string {
       <div class="form-grid">
         <label class="field field--wide"><span>${t(c, "permitType")}</span><select data-field="type" required>${typeOptions}</select></label>
         ${permit.type === "short-term" ? `<label class="field field--wide"><span>${t(c, "purpose")}</span><select data-field="purpose" required>${purposeOptions}</select></label>` : ""}
-        <label class="field"><span>${t(c, "start")}</span><input data-field="start" type="date" value="${permit.start}" max="${state.assessmentDate}" required></label>
-        <label class="field"><span>${t(c, "end")}</span><input data-field="end" type="date" value="${permit.end}" max="${state.assessmentDate}" ${permit.ongoing ? "disabled" : "required"}></label>
+        <label class="field"><span>${t(c, "start")}</span>${dateInput(permit.start, 'data-field="start"')}</label>
+        <label class="field"><span>${t(c, "end")}</span>${permit.ongoing ? `<input type="text" disabled>` : dateInput(permit.end, 'data-field="end"')}</label>
       </div>
       <label class="check"><input data-field="ongoing" type="checkbox" ${permit.ongoing ? "checked" : ""}> <span>${t(c, "ongoing")}</span></label>
     </fieldset>`;
@@ -164,13 +195,16 @@ function introMarkup(): string {
 function formMarkup(): string {
   if (!state.mode) return "";
   const c = state.language;
-  return `<main><div class="page-title"><button class="back" type="button" data-action="change-path">‹ ${t(c, "changePath")}</button><h1>${modeLabels[c][state.mode]}</h1></div><form id="assessment-form" novalidate><section class="panel"><label class="field field--date"><span>${t(c, "assessmentDate")}</span><input id="assessment-date" type="date" value="${state.assessmentDate}" required></label></section><section class="section"><div class="section__heading"><div><h2>${t(c, "permitHistory")}</h2><p>${t(c, "permitHistoryBody")}</p></div><button class="button button--secondary" type="button" data-action="add-permit">${t(c, "addPermit")}</button></div><div class="permits">${state.permits.map(permitMarkup).join("")}</div></section><section class="section"><h2>${t(c, "conditions")}</h2><div class="conditions">${conditionsMarkup()}</div></section>${state.error ? `<p class="error" role="alert">${t(c, state.error === "empty" ? "emptyError" : "dateError")}</p>` : ""}<button class="button button--primary submit" type="submit">${t(c, "calculate")}</button></form>${state.result ? resultMarkup(state.result) : ""}<footer><p>${t(c, "disclaimer")}</p><p>${t(c, "reviewed")}</p><strong>${t(c, "sources")}</strong><ul>${sources.map(([name, url]) => `<li><a href="${url}" target="_blank" rel="noreferrer">${name}</a></li>`).join("")}</ul></footer></main>`;
+  return `<main><div class="page-title"><button class="back" type="button" data-action="change-path">‹ ${t(c, "changePath")}</button><h1>${modeLabels[c][state.mode]}</h1></div><form id="assessment-form" novalidate><section class="panel"><label class="field field--date"><span>${t(c, "assessmentDate")}</span>${dateInput(state.assessmentDate, 'id="assessment-date"')}</label></section><section class="section"><div class="section__heading"><div><h2>${t(c, "permitHistory")}</h2><p>${t(c, "permitHistoryBody")}</p></div><button class="button button--secondary" type="button" data-action="add-permit">${t(c, "addPermit")}</button></div><div class="permits">${state.permits.map(permitMarkup).join("")}</div></section><section class="section"><h2>${t(c, "conditions")}</h2><div class="conditions">${conditionsMarkup()}</div></section>${state.error ? `<p class="error" role="alert">${t(c, state.error === "empty" ? "emptyError" : "dateError")}</p>` : ""}<button class="button button--primary submit" type="submit">${t(c, "calculate")}</button></form>${state.result ? resultMarkup(state.result) : ""}<footer><p>${t(c, "disclaimer")}</p><p>${t(c, "reviewed")}</p><strong>${t(c, "sources")}</strong><ul>${sources.map(([name, url]) => `<li><a href="${url}" target="_blank" rel="noreferrer">${name}</a></li>`).join("")}</ul></footer></main>`;
 }
 
 function render(): void {
+  datepickers.forEach((datepicker) => { if (!datepicker.isDestroyed) datepicker.destroy(); });
+  datepickers = [];
   document.documentElement.lang = t(state.language, "documentLanguage");
   app.innerHTML = `<div class="shell">${headerMarkup()}${state.mode ? formMarkup() : introMarkup()}</div>`;
   bindEvents();
+  initDatepickers();
   notifyHeight();
 }
 
@@ -190,8 +224,14 @@ function updatePermit(target: HTMLElement): void {
   else if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement) {
     if (field === "type") permit.type = target.value as PermitType;
     else if (field === "purpose") permit.purpose = target.value as ShortTermPurpose;
-    else if (field === "start") permit.start = target.value;
-    else if (field === "end") permit.end = target.value;
+    else if (field === "start" || field === "end") {
+      const parsed = parseDate(target.value);
+      if (!parsed) { state.error = "date"; target.setAttribute("aria-invalid", "true"); return; }
+      permit[field] = parsed;
+      state.error = null;
+      state.result = null;
+      return;
+    }
   }
   state.result = null;
   render();
@@ -221,7 +261,12 @@ function bindEvents(): void {
     render();
   }));
   document.querySelectorAll<HTMLElement>("[data-field]").forEach((control) => control.addEventListener("change", () => updatePermit(control)));
-  document.querySelector<HTMLInputElement>("#assessment-date")?.addEventListener("change", (event) => { state.assessmentDate = (event.currentTarget as HTMLInputElement).value; state.result = null; render(); });
+  document.querySelector<HTMLInputElement>("#assessment-date")?.addEventListener("change", (event) => {
+    const input = event.currentTarget as HTMLInputElement;
+    const parsed = parseDate(input.value);
+    if (!parsed) { state.error = "date"; input.setAttribute("aria-invalid", "true"); return; }
+    state.assessmentDate = parsed; state.error = null; state.result = null;
+  });
   document.querySelectorAll<HTMLSelectElement>("[data-condition]").forEach((select) => select.addEventListener("change", () => { state.conditions[select.dataset.condition ?? ""] = select.value as Answer; state.result = null; }));
   document.querySelector<HTMLFormElement>("#assessment-form")?.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -231,6 +276,31 @@ function bindEvents(): void {
     state.result = assessApplication({ mode: state.mode, assessmentDate: state.assessmentDate, permits: state.permits, conditions: state.conditions });
     render();
     requestAnimationFrame(() => document.querySelector<HTMLElement>(".result")?.focus());
+  });
+}
+
+function initDatepickers(): void {
+  const locale = state.language === "tr" ? tr : state.language === "tl" ? tagalog : en;
+  document.querySelectorAll<HTMLInputElement>("[data-datepicker]").forEach((input) => {
+    const datepicker = new AirDatepicker(input, {
+      locale, dateFormat: "dd.MM.yyyy", autoClose: true, keyboardNav: true,
+      maxDate: new Date(`${state.assessmentDate}T00:00:00`),
+      startDate: new Date(`${parseDate(input.value) ?? state.assessmentDate}T00:00:00`),
+      onSelect: ({ formattedDate }) => {
+        const parsed = parseDate(String(formattedDate));
+        if (!parsed) return;
+        if (input.id === "assessment-date") state.assessmentDate = parsed;
+        else {
+          const permit = state.permits.find((item) => item.id === input.closest<HTMLElement>("[data-permit-id]")?.dataset.permitId);
+          if (permit && (input.dataset.field === "start" || input.dataset.field === "end")) permit[input.dataset.field] = parsed;
+        }
+        state.error = null;
+        state.result = null;
+      },
+    });
+    input.addEventListener("keydown", (event) => { if (event.key === "Escape") datepicker.hide(); });
+    input.addEventListener("input", () => { if (parseDate(input.value)) datepicker.hide(); });
+    datepickers.push(datepicker);
   });
 }
 

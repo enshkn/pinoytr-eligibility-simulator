@@ -11,6 +11,9 @@
     "test:browser": "playwright test",
     "check": "npm test && npm run build && npm run test:browser"
   },
+  "dependencies": {
+    "air-datepicker": "^3.6.0"
+  },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
     "typescript": "^5.9.2",
