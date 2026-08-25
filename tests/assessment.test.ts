@@ -130,4 +130,17 @@ describe("eligibility assessment", () => {
       permits: [base.permits[0]!, { ...base.permits[1]!, start: "2021-05-03" }],
     })).toMatchObject({ status: "official-verification-required", gapDays: 91 });
   });
+
+  it("does not describe an expired excluded permit as the current status", () => {
+    const result = assessApplication({
+      mode: "long-term",
+      assessmentDate: "2026-01-01",
+      permits: [
+        { id: "expired", type: "humanitarian", start: "2022-01-01", end: "2025-06-30", ongoing: false },
+      ],
+      conditions: confirmed,
+    });
+
+    expect(result.status).toBe("threshold-not-reached");
+  });
 });

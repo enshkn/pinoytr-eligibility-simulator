@@ -195,13 +195,15 @@ export function assessApplication(input: AssessmentInput): AssessmentResult {
 
   const latestPermit = [...input.permits]
     .sort((a, b) => parseDate(b.ongoing ? input.assessmentDate : b.end) - parseDate(a.ongoing ? input.assessmentDate : a.end))[0];
-  const latestIsExcluded = input.mode === "long-term" && latestPermit && [
-    "humanitarian",
-    "international-protection",
-    "temporary-protection",
-  ].includes(latestPermit.type);
+  const latestIsCurrent = latestPermit && (
+    latestPermit.ongoing || parseDate(latestPermit.end) >= parseDate(input.assessmentDate)
+  );
+  const latestIsExcluded = input.mode === "long-term" && latestPermit && latestIsCurrent && (
+    ["humanitarian", "international-protection", "temporary-protection"].includes(latestPermit.type) ||
+    ((latestPermit.type === "work-permit" || latestPermit.type === "work-exemption") && latestPermit.protectionBased)
+  );
   let status: AssessmentStatus = countedDays >= requiredDays ? "threshold-reached" : "threshold-not-reached";
-  if (input.mode === "long-term" && latestPermit?.type === "long-term") status = "already-holds-status";
+  if (input.mode === "long-term" && latestPermit?.type === "long-term" && latestIsCurrent) status = "already-holds-status";
   else if (latestIsExcluded) status = "status-excluded";
   else if (gapDays > 90 || uncertainDays > 0 || unmetConditions.length > 0 || unsureConditions.length > 0) {
     status = "official-verification-required";
