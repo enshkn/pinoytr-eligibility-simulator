@@ -44,3 +44,43 @@ test("a mobile user completes the long-term residence flow and receives iframe r
   expect(errors).toEqual([]);
   expect(externalRequests).toEqual([]);
 });
+
+test("invalid typed dates cannot reuse an older valid value", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /Long-term residence/ }).click();
+  await page.getByLabel("Assessment date").fill("01.01.2026");
+  await page.getByLabel("Assessment date").press("Tab");
+  await page.getByRole("button", { name: "Add permit period" }).click();
+  await page.getByLabel("Permit type").selectOption("family");
+  await page.getByLabel("Start date").fill("01.01.2018");
+  await page.getByLabel("End date").fill("31.12.2025");
+  await page.getByLabel("End date").press("Tab");
+
+  await page.getByLabel("Assessment date").fill("31.02.2026");
+  await page.getByRole("button", { name: "Calculate pre-assessment" }).click();
+  await expect(page.getByRole("alert")).toHaveText("Check the dates and permit types.");
+  await expect(page.locator(".result")).toHaveCount(0);
+
+  await page.getByLabel("Assessment date").fill("01.01.2026");
+  await page.getByLabel("Start date").fill("02.01.2025");
+  await page.getByLabel("End date").fill("01.01.2025");
+  await page.getByRole("button", { name: "Calculate pre-assessment" }).click();
+  await expect(page.getByRole("alert")).toHaveText("Check the dates and permit types.");
+  await expect(page.locator(".result")).toHaveCount(0);
+});
+
+test("calendar follows all three interface languages", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /Long-term residence/ }).click();
+  await page.getByLabel("Assessment date").fill("01.01.2026");
+  await page.getByLabel("Assessment date").press("Tab");
+
+  await page.locator("#language").selectOption("tr");
+  await page.getByLabel("Değerlendirme tarihi").click();
+  await expect(page.locator(".air-datepicker-nav--title")).toContainText("Ocak");
+  await page.locator(".air-datepicker-cell.-day-:not(.-disabled-):not(.-other-month-)").first().click();
+
+  await page.locator("#language").selectOption("tl");
+  await page.getByLabel("Petsa ng pagsusuri").click();
+  await expect(page.locator(".air-datepicker-nav--title")).toContainText("Enero");
+});

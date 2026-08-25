@@ -271,6 +271,10 @@ function bindEvents(): void {
   document.querySelector<HTMLFormElement>("#assessment-form")?.addEventListener("submit", (event) => {
     event.preventDefault();
     if (state.permits.length === 0) { state.error = "empty"; render(); return; }
+    const form = event.currentTarget as HTMLFormElement;
+    const datesAreValid = [...form.querySelectorAll<HTMLInputElement>("[data-datepicker]:not(:disabled)")]
+      .every((input) => parseDate(input.value));
+    if (!datesAreValid) { state.error = "date"; render(); return; }
     if (!validPermits() || !state.mode) { state.error = "date"; render(); return; }
     state.error = null;
     state.result = assessApplication({ mode: state.mode, assessmentDate: state.assessmentDate, permits: state.permits, conditions: state.conditions });
